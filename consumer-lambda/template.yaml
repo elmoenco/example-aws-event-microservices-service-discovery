@@ -1,0 +1,35 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example Lambda that consumes another Lambda service 
+
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters: 
+  LambdaServiceNamespaceName: 
+    Type: String
+    Description: "The Cloud Map Namespace Name of the Lambda service to be consumed"
+    Default: "marck-api-namespace"     
+  LambdaServiceServiceName: 
+    Type: String
+    Description: "The name of the Lambda service to be consumed"
+    Default: "lambda-service"
+
+
+Globals:
+  Function:
+    Timeout: 3
+
+Resources:
+  ConsumerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+      Environment:
+        Variables:
+          ENV_SERVICE_NAME: !Ref LambdaServiceServiceName
+          ENV_NAMESPACE_NAME: !Ref LambdaServiceNamespaceName

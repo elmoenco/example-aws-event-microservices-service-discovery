@@ -1,0 +1,49 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  SAM template for Example Lambda service
+  
+  This Example Lambda service registers itself with the Lamda ARN as the service endpoint
+
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters: 
+  NamespaceId: 
+    Type: String
+    Description: "The Cloud Map Namespace ID (not the Namespace name)"   
+# TODO: remove default
+    Default: "ns-dcfnonqa6vnwgcd3"
+  ServiceName: 
+    Type: String
+    Description: "Specify the name of the service. This name will be used in Cloud Map Service Discovery"   
+    Default: "lambda-service"
+
+Resources:
+  ServiceFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: src/
+      Handler: app.lambda_handler
+      Runtime: python3.7
+
+  LambdaService:
+      Type: AWS::ServiceDiscovery::Service
+      Properties:
+        Description: Example Lambda service
+        # make sure we have some kind of microservice naming convention
+        Name: !Ref ServiceName
+        NamespaceId: !Ref NamespaceId
+
+  LambdaServiceInstance:
+    Type: AWS::ServiceDiscovery::Instance
+    Properties:
+      InstanceAttributes:
+        Arn: !GetAtt ServiceFunction.Arn
+      InstanceId: 
+        !Join
+          - '_'
+          - - !Ref ServiceName
+            - 'Instance'
+      ServiceId: !Ref LambdaService

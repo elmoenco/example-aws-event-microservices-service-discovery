@@ -1,0 +1,105 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: >
+  Example Stepfunctions that consumes a Lambda service 
+
+Globals:
+  Function:
+    Timeout: 3
+
+Parameters: 
+  LambdaServiceNamespaceName: 
+    Type: String
+    Description: "The Cloud Map Namespace Name of the Lambda service to be consumed"
+    Default: "marck-api-namespace"     
+  LambdaServiceServiceName: 
+    Type: String
+    Description: "The name of the Lambda service to be consumed"
+    Default: "lambda-service"
+
+
+Resources:
+  ConnectorRole:
+    Type: AWS::IAM::Role
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+        - Effect: Allow
+          Principal:
+            Service:
+            - lambda.amazonaws.com
+          Action:
+          - sts:AssumeRole
+      Path: "/"
+      Policies:
+      - PolicyName: root
+        PolicyDocument:
+          Version: '2012-10-17'
+          Statement:
+          - Effect: Allow
+            Action:
+            - logs:*
+            Resource: arn:aws:logs:*:*:*
+          - Effect: Allow
+            Action:
+            - lambda:*
+            - servicediscovery:*
+            Resource: "*"
+
+  LambdaServiceConnectorFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: connector_lambda.lambda_handler
+      CodeUri: src/
+      Runtime: python3.7
+      Environment:
+        Variables:
+          ENV_SERVICE_NAME: !Ref LambdaServiceServiceName
+          ENV_NAMESPACE_NAME: !Ref LambdaServiceNamespaceName
+      Role:
+        Fn::GetAtt:
+        - ConnectorRole
+        - Arn
+
+  StatesExecutionRole:
+    Type: "AWS::IAM::Role"
+    Properties:
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: "Allow"
+            Principal:
+              Service:
+                - !Sub states.${AWS::Region}.amazonaws.com
+            Action: "sts:AssumeRole"
+      Path: "/"
+      Policies:
+        - PolicyName: StatesExecutionPolicy
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - "lambda:InvokeFunction"
+                Resource: "*"
+
+  StateMachine:
+    Type: "AWS::StepFunctions::StateMachine"
+    Properties:
+      DefinitionString:
+        !Sub
+          - |-
+            {
+              "Comment": "Example statemachine with service discovery connector to invoke the Example Lambda service",
+              "StartAt": "lambda-service",
+              "States": {
+                "lambda-service": {
+                  "Type": "Task",
+                  "Resource": "${LambdaServiceConnectorArn}",
+                  "End": true
+                }
+              }
+            }
+          - {LambdaServiceConnectorArn: !GetAtt [ LambdaServiceConnectorFunction, Arn ]}
+      RoleArn: !GetAtt [ StatesExecutionRole, Arn ]
