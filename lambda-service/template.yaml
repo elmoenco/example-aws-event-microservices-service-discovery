@@ -12,9 +12,7 @@ Globals:
 Parameters: 
   NamespaceId: 
     Type: String
-    Description: "The Cloud Map Namespace ID (not the Namespace name)"   
-# TODO: remove default
-    Default: "ns-dcfnonqa6vnwgcd3"
+    Description: "The Cloud Map Namespace ID (not the Namespace name)"
   ServiceName: 
     Type: String
     Description: "Specify the name of the service. This name will be used in Cloud Map Service Discovery"   

@@ -11,16 +11,10 @@ Parameters:
   LambdaServiceNamespaceName: 
     Type: String
     Description: "The Cloud Map Namespace Name of the Lambda service to be consumed"
-    Default: "marck-api-namespace"     
   LambdaServiceServiceName: 
     Type: String
     Description: "The name of the Lambda service to be consumed"
     Default: "lambda-service"
-
-
-Globals:
-  Function:
-    Timeout: 3
 
 Resources:
   ConsumerFunction:
